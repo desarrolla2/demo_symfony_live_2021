@@ -1,0 +1,23 @@
+{
+  "name": "daniel/symfony_live_es_2021",
+  "authors": [
+    {
+      "name": "Daniel González",
+      "email": "daniel@devtia.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^9.5",
+    "symfony/var-dumper": "^5.2"
+  }
+}
