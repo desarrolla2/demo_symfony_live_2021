@@ -5,25 +5,26 @@ namespace App\Confrontation;
 
 
 use App\Match\Match;
+use App\Team;
 
 class Confrontation
 {
-    private string $homeTeam;
-    private string $awayTeam;
+    private Team $homeTeam;
+    private Team $awayTeam;
     private array $matches = [];
 
-    public function __construct(string $homeTeam, string $awayTeam)
+    public function __construct(Team $homeTeam, Team $awayTeam)
     {
         $this->homeTeam = $homeTeam;
         $this->awayTeam = $awayTeam;
     }
 
-    public function getHomeTeam(): string
+    public function getHomeTeam(): Team
     {
         return $this->homeTeam;
     }
 
-    public function getAwayTeam(): string
+    public function getAwayTeam(): Team
     {
         return $this->awayTeam;
     }

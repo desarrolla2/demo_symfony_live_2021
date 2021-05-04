@@ -3,6 +3,7 @@
 namespace App;
 
 use App\Confrontation\Confrontation;
+use App\Draw\DrawInterface;
 use App\Match\Match;
 use App\Output\Output;
 
@@ -15,14 +16,17 @@ class Competition
 
     private array $teams = [];
     private array $confrontations = [];
-    private string $winner = '';
+    private Team $winner;
     private Output $output;
+    private DrawInterface $draw;
 
-    public function __construct(array $teams, Output $output)
+    public function __construct(array $teams, DrawInterface $draw, Output $output)
     {
         $this->teams = $teams;
         $this->output = $output;
+        $this->draw = $draw;
     }
+
 
     public function getMatches(): array
     {
@@ -35,74 +39,47 @@ class Competition
         return $matches;
     }
 
-    public function getWinner(): string
+    public function getWinner(): Team
     {
         return $this->winner;
     }
 
     public function run()
     {
-        $this->write('');
-        $this->write('Octavos de final');
-        $round = $this->createRound($this->teams);
-        $classifiedTeams = [];
-        foreach ($round as $confrontation) {
-            $classifiedTeams[] = $this->calculate($confrontation, self::ROUND_OF_16);
-        }
+        $classifiedTeams = $this->playRound($this->teams, 'Octavos de final', self::ROUND_OF_16);
+        $classifiedTeams = $this->playRound($classifiedTeams, 'Cuartos de final', self::ROUND_OF_8);
+        $classifiedTeams = $this->playRound($classifiedTeams, 'Semifinales', self::ROUND_SEMIFINAL);
+        $classifiedTeams = $this->playRound($classifiedTeams, 'Final', self::ROUND_FINAL);
 
-        $this->write('');
-        $this->write('Cuartos de final');
-        $round = $this->createRound($classifiedTeams);
-        $classifiedTeams = [];
-        foreach ($round as $confrontation) {
-            $classifiedTeams[] = $this->calculate($confrontation, self::ROUND_OF_8);
-        }
-
-        $this->write('');
-        $this->write('Semifinales');
-        $round = $this->createRound($classifiedTeams);
-        $classifiedTeams = [];
-        foreach ($round as $confrontation) {
-            $classifiedTeams[] = $this->calculate($confrontation, self::ROUND_SEMIFINAL);
-        }
-
-        $this->write('');
-        $this->write('Final');
-        $round = $this->createRound($classifiedTeams);
-        foreach ($round as $confrontation) {
-            $this->winner = $this->calculate($confrontation, self::ROUND_FINAL);
-        }
+        $this->winner = $classifiedTeams[0];
 
         $this->write('');
         $this->write(sprintf('Vencedor de la ESL: "%s"', $this->winner));
     }
 
-    private function calculateWinner(string $firstTeamName, string $secondTeamName, int $firstTeamGoals, int $secondTeamGoals): string
+    private function calculateWinner(Team $firstTeamName, Team $secondTeamName, int $firstTeamGoals, int $secondTeamGoals): Team
     {
         if ($firstTeamGoals > $secondTeamGoals) {
             $this->write(sprintf('    + winner "%s"', $firstTeamName));
 
             return $firstTeamName;
-        } else {
-            if ($firstTeamGoals < $secondTeamGoals) {
-                $this->write(sprintf('    + winner "%s"', $secondTeamName));
-
-                return $secondTeamName;
-            } else {
-                if (round(0, 1) == 0) {
-                    $this->write(sprintf('    + winner "%s"', $firstTeamName));
-
-                    return $firstTeamName;
-                } else {
-                    $this->write(sprintf('    + winner "%s"', $secondTeamName));
-
-                    return $secondTeamName;
-                }
-            }
         }
+        if ($firstTeamGoals < $secondTeamGoals) {
+            $this->write(sprintf('    + winner "%s"', $secondTeamName));
+
+            return $secondTeamName;
+        }
+        if (round(0, 1) == 0) {
+            $this->write(sprintf('    + winner "%s"', $firstTeamName));
+
+            return $firstTeamName;
+        }
+        $this->write(sprintf('    + winner "%s"', $secondTeamName));
+
+        return $secondTeamName;
     }
 
-    private function getWinnerOfDoubleGame(Confrontation $confrontation): string
+    private function getWinnerOfDoubleGame(Confrontation $confrontation): Team
     {
         $this->write(sprintf('"%s" vs "%s', $confrontation->getHomeTeam(), $confrontation->getAwayTeam()));
 
@@ -125,10 +102,7 @@ class Competition
         );
     }
 
-    /**
-     * This method play de confrontation and return the winner of a double or single match
-     */
-    private function calculate(Confrontation $confrontation, string $roundName): string
+    private function playConfrontationAndGetWinner(Confrontation $confrontation, string $roundName): Team
     {
         switch ($roundName) {
             case self::ROUND_OF_16:
@@ -140,7 +114,7 @@ class Competition
         }
     }
 
-    private function getWinnerOfSingleGame(Confrontation $confrontation): string
+    private function getWinnerOfSingleGame(Confrontation $confrontation): Team
     {
         $this->write(sprintf('"%s" vs "%s', $confrontation->getHomeTeam(), $confrontation->getAwayTeam()));
         $match = new Match($confrontation->getHomeTeam(), $confrontation->getAwayTeam(), rand(0, 5), rand(0, 5));
@@ -156,15 +130,25 @@ class Competition
      */
     private function createRound(array $teams): array
     {
-        shuffle($teams);
-        $round = [];
-        for ($i = 0; $i <= count($teams) - 1; $i += 2) {
-            $confrontation = new Confrontation($teams[$i], $teams[$i + 1]);
-            $round[] = $confrontation;
+        $round = $this->draw->execute($teams);
+        foreach ($round as $confrontation) {
             $this->confrontations[] = $confrontation;
         }
 
         return $round;
+    }
+
+    private function playRound(array $teams, string $roundTitle, string $roundType): array
+    {
+        $this->write('');
+        $this->write($roundTitle);
+        $round = $this->createRound($teams);
+        $classifiedTeams = [];
+        foreach ($round as $confrontation) {
+            $classifiedTeams[] = $this->playConfrontationAndGetWinner($confrontation, $roundType);
+        }
+
+        return $classifiedTeams;
     }
 
     private function write(string $text): void

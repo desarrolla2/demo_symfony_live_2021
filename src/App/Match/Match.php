@@ -4,14 +4,16 @@
 namespace App\Match;
 
 
+use App\Team;
+
 class Match
 {
-    private string $homeTeam;
-    private string $awayTeam;
+    private Team $homeTeam;
+    private Team $awayTeam;
     private int $homeGoals;
     private int $awayGoals;
 
-    public function __construct(string $homeTeam, string $awayTeam, int $homeGoals, int $awayGoals)
+    public function __construct(Team $homeTeam, Team $awayTeam, int $homeGoals, int $awayGoals)
     {
         $this->homeTeam = $homeTeam;
         $this->awayTeam = $awayTeam;
@@ -19,12 +21,12 @@ class Match
         $this->awayGoals = $awayGoals;
     }
 
-    public function getHomeTeam(): string
+    public function getHomeTeam(): Team
     {
         return $this->homeTeam;
     }
 
-    public function getAwayTeam(): string
+    public function getAwayTeam(): Team
     {
         return $this->awayTeam;
     }
